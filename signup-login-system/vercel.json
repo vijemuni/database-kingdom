@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/index.html"
+    }
+  ],
+  "env": {
+    "DB_HOST": "bmit0bpiau5ou7gx51fr-mysql.services.clever-cloud.com",
+    "DB_USER": "uaa1hwklgilqtmzw",
+    "DB_PASSWORD": "lU7UCzZBTZGGeBcdoVxe",
+    "DB_NAME": "bmit0bpiau5ou7gx51fr",
+    "DB_PORT": "3306",
+    "JWT_SECRET": "your_jwt_secret_here"
+  }
+}
