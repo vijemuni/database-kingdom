@@ -9,18 +9,18 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+async function getConnection() {
+  return await mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
+  });
+}
 
 app.post('/api/signup', async (req, res) => {
+  let connection;
   try {
     const { name, email, password } = req.body;
     console.log('Received signup request:', { name, email });
@@ -28,7 +28,8 @@ app.post('/api/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log('Password hashed successfully');
 
-    const [result] = await pool.execute(
+    connection = await getConnection();
+    const [result] = await connection.execute(
       'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
       [name, email, hashedPassword]
     );
@@ -42,15 +43,19 @@ app.post('/api/signup', async (req, res) => {
     } else {
       res.status(500).json({ message: 'Error creating user', error: error.message });
     }
+  } finally {
+    if (connection) await connection.end();
   }
 });
 
 app.post('/api/login', async (req, res) => {
+  let connection;
   try {
     const { email, password } = req.body;
     console.log('Received login request:', { email });
 
-    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+    connection = await getConnection();
+    const [rows] = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -68,6 +73,8 @@ app.post('/api/login', async (req, res) => {
   } catch (error) {
     console.error('Detailed error in login:', error);
     res.status(500).json({ message: 'Error logging in', error: error.message });
+  } finally {
+    if (connection) await connection.end();
   }
 });
 
